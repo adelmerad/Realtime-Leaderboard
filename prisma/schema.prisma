@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SortOrder {
+  HIGHER_IS_BETTER
+  LOWER_IS_BETTER
+}
+
+enum ScoreSource {
+  API
+  ADMIN
+}
+
+model Game {
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  name         String
+  description  String?
+  sortOrder    SortOrder @default(HIGHER_IS_BETTER)
+  unit         String    @default("points")
+  // Only a SHA-256 hash of the API key is stored; the key itself is shown once
+  apiKeyHash   String    @unique
+  apiKeyPrefix String
+  createdAt    DateTime  @default(now())
+
+  scores Score[]
+}
+
+model Player {
+  id          String   @id @default(cuid())
+  // Lower-cased name used to match the same player across submissions
+  nameKey     String   @unique
+  displayName String
+  createdAt   DateTime @default(now())
+
+  scores Score[]
+}
+
+model Score {
+  id          String      @id @default(cuid())
+  gameId      String
+  playerId    String
+  value       Float
+  source      ScoreSource @default(API)
+  submittedAt DateTime    @default(now())
+
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([gameId, value])
+  @@index([gameId, submittedAt])
+  @@index([submittedAt])
+}
