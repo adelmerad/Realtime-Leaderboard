@@ -1,90 +1,80 @@
 import Link from "next/link"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Trophy, Plus, BarChart3 } from "lucide-react"
+import { BarChart3, Gamepad2, Trophy, Users, Zap } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ActivityFeed } from "@/components/activity-feed"
+import { GameCard } from "@/components/game-card"
+import { getStats, listGames } from "@/lib/leaderboard"
 
-export default function HomePage() {
+export const dynamic = "force-dynamic"
+
+export default async function HomePage() {
+  const [stats, games] = await Promise.all([getStats(), listGames()])
+
+  const tiles = [
+    { label: "Games", value: stats.games, icon: Gamepad2 },
+    { label: "Players", value: stats.players, icon: Users },
+    { label: "Scores", value: stats.scores, icon: BarChart3 },
+    { label: "Scores today", value: stats.today, icon: Zap },
+  ]
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-6">
-              <Trophy className="w-10 h-10 text-primary" />
-            </div>
-            <h1 className="text-5xl font-bold mb-4 text-balance">Realtime Leaderboard</h1>
-            <p className="text-xl text-muted-foreground text-balance">
-              Track scores and rankings across multiple games in realtime
-            </p>
+    <main className="container mx-auto px-4 py-12">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-12 text-center">
+          <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+            <Trophy className="h-10 w-10 text-primary" />
           </div>
-
-          {/* Action Cards */}
-          <div className="grid md:grid-cols-3 gap-6">
-            <Link href="/games" className="block">
-              <Card className="h-full transition-all hover:shadow-lg hover:scale-105 cursor-pointer">
-                <CardHeader>
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                    <Plus className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle>Manage Games</CardTitle>
-                  <CardDescription>Add new games and manage existing ones</CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
-
-            <Link href="/submit-score" className="block">
-              <Card className="h-full transition-all hover:shadow-lg hover:scale-105 cursor-pointer">
-                <CardHeader>
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                    <BarChart3 className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle>Submit Score</CardTitle>
-                  <CardDescription>Add your score for any game</CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
-
-            <Link href="/leaderboard" className="block">
-              <Card className="h-full transition-all hover:shadow-lg hover:scale-105 cursor-pointer">
-                <CardHeader>
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                    <Trophy className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle>View Leaderboard</CardTitle>
-                  <CardDescription>See live rankings and compete</CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
+          <h1 className="mb-4 text-balance text-5xl font-bold">Realtime Leaderboard</h1>
+          <p className="mx-auto max-w-2xl text-balance text-xl text-muted-foreground">
+            Submit scores from any game through a simple API and watch the rankings update live for every viewer.
+          </p>
+          <div className="mt-6 flex justify-center gap-3">
+            <Button asChild>
+              <Link href="/games">Browse leaderboards</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/docs">Read the API docs</Link>
+            </Button>
           </div>
+        </div>
 
-          {/* Quick Start */}
-          <Card className="mt-12 border-primary/20">
-            <CardHeader>
-              <CardTitle>Quick Start</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">
-                  1
-                </div>
-                <p className="text-muted-foreground">Create a new game from the Manage Games page</p>
+        <div className="mb-10 grid grid-cols-2 gap-4 md:grid-cols-4">
+          {tiles.map((t) => (
+            <Card key={t.label}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t.label}</CardTitle>
+                <t.icon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{t.value.toLocaleString("en-US")}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-5">
+          <section className="lg:col-span-3">
+            <h2 className="mb-4 text-2xl font-semibold">Games</h2>
+            {games.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  No games yet. An admin can create the first one.
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {games.map((g) => (
+                  <GameCard key={g.id} game={g} />
+                ))}
               </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">
-                  2
-                </div>
-                <p className="text-muted-foreground">Submit scores for players in that game</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">
-                  3
-                </div>
-                <p className="text-muted-foreground">Watch the leaderboard update in realtime</p>
-              </div>
-            </CardContent>
-          </Card>
+            )}
+          </section>
+          <section className="lg:col-span-2">
+            <ActivityFeed />
+          </section>
         </div>
       </div>
-    </div>
+    </main>
   )
 }
