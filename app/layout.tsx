@@ -4,13 +4,12 @@ import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
-import { LeaderboardProvider } from "@/contexts/leaderboard-context"
-import { Suspense } from "react"
-import { Toaster } from "@/components/ui/toaster"
+import { SiteHeader } from "@/components/site-header"
+import { Toaster } from "@/components/ui/sonner"
 
 export const metadata: Metadata = {
   title: "Realtime Leaderboard",
-  description: "Track scores and rankings in realtime",
+  description: "Live rankings for any game — submit scores through an API and watch the leaderboard update instantly.",
 }
 
 export default function RootLayout({
@@ -21,11 +20,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
-        <LeaderboardProvider>
-          <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
-          <Toaster />
-        </LeaderboardProvider>
-        <Analytics />
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
+          <SiteHeader />
+          {children}
+        </div>
+        <Toaster position="bottom-right" />
+        {/* Vercel Analytics only exists on Vercel deployments */}
+        {process.env.VERCEL && <Analytics />}
       </body>
     </html>
   )
