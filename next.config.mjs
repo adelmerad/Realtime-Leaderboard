@@ -3,11 +3,12 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   images: {
     unoptimized: true,
+  },
+  experimental: {
+    // pg is a Node.js package used by the realtime listener
+    serverComponentsExternalPackages: ["pg"],
   },
 }
 
