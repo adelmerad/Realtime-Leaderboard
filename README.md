@@ -9,6 +9,8 @@
 
 A leaderboard service for any game: games submit scores through a REST API, and every viewer sees the rankings update **live** — no refresh, across any number of server instances.
 
+**🌐 Live demo: [realtime-leaderboard-gmdt.onrender.com](https://realtime-leaderboard-gmdt.onrender.com)** — deployed on Render with a Neon PostgreSQL database (the free instance may take ~50 s to wake up).
+
 ![Live leaderboard](docs/screenshots/leaderboard.png)
 
 ## ✨ Features
@@ -147,5 +149,5 @@ Unit tests cover ranking and ties, sort orders, period boundaries, validation, A
 
 ## 📝 Notes
 
-- Started as a frontend prototype storing data in `localStorage` (September 2025); v2 adds the database, the API and real-time updates.
+- Started as a frontend prototype storing data in `localStorage` (September 2025); v2 adds the database, the API and real-time updates. In production it runs on Render (Frankfurt) with Neon PostgreSQL.
 - The rate limiter is in memory, per instance — behind a load balancer it should move to a shared store such as Redis.
