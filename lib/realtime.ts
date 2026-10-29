@@ -23,9 +23,9 @@ export function retryDelay(attempt: number): number {
   return Math.min(MAX_RETRY_MS, 1000 * 2 ** attempt)
 }
 
-// The listener URL can differ from the app's: connection poolers (e.g. Neon "-pooler")
-// do not support LISTEN, so LISTEN_DATABASE_URL may point to a direct connection.
-const listenUrl = () => process.env.LISTEN_DATABASE_URL || process.env.DATABASE_URL
+// LISTEN needs a session-level connection: connection poolers (such as Neon "-pooler" URLs,
+// PgBouncer in transaction mode) do not support it. Use the direct URL when one is provided.
+const listenUrl = () => process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL
 
 /**
  * The connection can drop at any time (network, database restart, serverless databases
