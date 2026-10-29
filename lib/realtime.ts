@@ -10,16 +10,39 @@ import type { RealtimeEvent } from "./types"
  */
 export const CHANNEL = "leaderboard_events"
 
-type Hub = { emitter: EventEmitter; listener: Promise<Client> | null }
+type Hub = { emitter: EventEmitter; listener: Promise<Client> | null; retryTimer: ReturnType<typeof setTimeout> | null }
 const globalForHub = globalThis as unknown as { leaderboardHub?: Hub }
-const hub: Hub = globalForHub.leaderboardHub ?? { emitter: new EventEmitter(), listener: null }
+const hub: Hub = globalForHub.leaderboardHub ?? { emitter: new EventEmitter(), listener: null, retryTimer: null }
 hub.emitter.setMaxListeners(0)
 globalForHub.leaderboardHub = hub
+
+const MAX_RETRY_MS = 30_000
+
+/** Delay before the n-th reconnection attempt: 1s, 2s, 4s… capped at 30s. */
+export function retryDelay(attempt: number): number {
+  return Math.min(MAX_RETRY_MS, 1000 * 2 ** attempt)
+}
+
+// The listener URL can differ from the app's: connection poolers (e.g. Neon "-pooler")
+// do not support LISTEN, so LISTEN_DATABASE_URL may point to a direct connection.
+const listenUrl = () => process.env.LISTEN_DATABASE_URL || process.env.DATABASE_URL
+
+/**
+ * The connection can drop at any time (network, database restart, serverless databases
+ * that suspend when idle). Reconnect with backoff while anyone is subscribed.
+ */
+function scheduleReconnect(attempt: number) {
+  if (hub.retryTimer || hub.emitter.listenerCount("event") === 0) return
+  hub.retryTimer = setTimeout(() => {
+    hub.retryTimer = null
+    connectListener().catch(() => scheduleReconnect(attempt + 1))
+  }, retryDelay(attempt))
+}
 
 function connectListener(): Promise<Client> {
   if (hub.listener) return hub.listener
   hub.listener = (async () => {
-    const client = new Client({ connectionString: process.env.DATABASE_URL })
+    const client = new Client({ connectionString: listenUrl() })
     client.on("notification", (msg) => {
       if (msg.channel !== CHANNEL || !msg.payload) return
       try {
@@ -28,11 +51,14 @@ function connectListener(): Promise<Client> {
         // ignore malformed payloads
       }
     })
-    client.on("error", () => {
-      // Reconnect on the next subscription
+    const lost = () => {
+      if (hub.listener === null) return
       hub.listener = null
       client.end().catch(() => {})
-    })
+      scheduleReconnect(0)
+    }
+    client.on("error", lost)
+    client.on("end", lost)
     await client.connect()
     await client.query(`LISTEN ${CHANNEL}`)
     return client
